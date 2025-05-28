@@ -1,5 +1,5 @@
 // src/pages/ProductList.tsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   Box,
   Typography,
@@ -17,6 +17,7 @@ import {
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { SidebarFilters, type FilterOpts } from "../components/SidebarFilters";
+import { useAppSelector } from "../app/hooks";
 
 interface Product {
   id: number;
@@ -25,7 +26,7 @@ interface Product {
   category: string;
   rating: number;
   discount: number;
-  photo: string; // updated from 'image'
+  photo: string;
   description: string;
 }
 
@@ -38,8 +39,25 @@ export const ProductList: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
+  const [visibleCount, setVisibleCount] = useState(2); // Show 2 initially
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+
   const navigate = useNavigate();
   const API_URL = "http://localhost:3001/products";
+
+  const searchTerm = useAppSelector((state) =>
+    state.search.searchTerm.toLowerCase()
+  );
+
+  const [currentFilters, setCurrentFilters] = useState<FilterOpts>({
+    sortBy: "price",
+    sortDir: "asc",
+    category: "",
+    priceMin: 0,
+    priceMax: 10000,
+    ratingMin: 0,
+    discountMin: 0,
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -58,7 +76,12 @@ export const ProductList: React.FC = () => {
     fetchData();
   }, []);
 
-  const handleFilterChange = (opts: FilterOpts) => {
+  useEffect(() => {
+    applyFilters(currentFilters, searchTerm);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm, products]);
+
+  const applyFilters = (opts: FilterOpts, search: string) => {
     const {
       sortBy,
       sortDir,
@@ -83,7 +106,21 @@ export const ProductList: React.FC = () => {
         p.discount >= discountMin
     );
 
+    if (search) {
+      updated = updated.filter(
+        (p) =>
+          p.name.toLowerCase().includes(search) ||
+          p.description.toLowerCase().includes(search)
+      );
+    }
+
     updated.sort((a, b) => {
+      if (sortBy === "price") {
+        return sortDir === "asc"
+          ? Number(a.price) - Number(b.price)
+          : Number(b.price) - Number(a.price);
+      }
+
       const fieldA = a[sortBy];
       const fieldB = b[sortBy];
 
@@ -91,14 +128,18 @@ export const ProductList: React.FC = () => {
         return sortDir === "asc"
           ? fieldA.localeCompare(fieldB)
           : fieldB.localeCompare(fieldA);
-      } else if (typeof fieldA === "number" && typeof fieldB === "number") {
-        return sortDir === "asc" ? fieldA - fieldB : fieldB - fieldA;
       }
 
       return 0;
     });
 
     setFilteredProducts(updated);
+    setVisibleCount(2); // Reset visible count on new filters/search
+  };
+
+  const handleFilterChange = (opts: FilterOpts) => {
+    setCurrentFilters(opts);
+    applyFilters(opts, searchTerm);
   };
 
   const openDeleteDialog = (product: Product) => {
@@ -130,6 +171,36 @@ export const ProductList: React.FC = () => {
     navigate(`/products/${id}/edit`);
   };
 
+  // Infinite Scroll Observer
+  useEffect(() => {
+    if (!loadMoreRef.current) return;
+    if (visibleCount >= filteredProducts.length) return; // All loaded
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setVisibleCount((prev) => {
+            if (prev < filteredProducts.length) {
+              return Math.min(prev + 2, filteredProducts.length);
+            }
+            return prev;
+          });
+        }
+      },
+      {
+        root: null,
+        rootMargin: "100px",
+        threshold: 0.1,
+      }
+    );
+
+    observer.observe(loadMoreRef.current);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [filteredProducts]); // Run when filtered products change
+
   if (loading) {
     return (
       <Box textAlign="center" mt={10}>
@@ -141,7 +212,6 @@ export const ProductList: React.FC = () => {
 
   return (
     <Container maxWidth="xl" sx={{ display: "flex", mt: 4 }}>
-      {/* Sidebar */}
       <Paper elevation={2} sx={{ width: 300, p: 2, borderRadius: 2 }}>
         <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
           Filter & Sort
@@ -151,7 +221,6 @@ export const ProductList: React.FC = () => {
 
       <Divider orientation="vertical" flexItem sx={{ mx: 2 }} />
 
-      {/* Product listing */}
       <Box sx={{ flexGrow: 1 }}>
         {filteredProducts.length === 0 ? (
           <Typography variant="h6">No products match your filters.</Typography>
@@ -164,7 +233,7 @@ export const ProductList: React.FC = () => {
               justifyContent: "flex-start",
             }}
           >
-            {filteredProducts.map((product) => (
+            {filteredProducts.slice(0, visibleCount).map((product) => (
               <Box
                 key={product.id}
                 sx={{
@@ -229,6 +298,19 @@ export const ProductList: React.FC = () => {
                 </Box>
               </Box>
             ))}
+
+            {/* Infinite Scroll Loader */}
+            {visibleCount < filteredProducts.length && (
+              <Box
+                ref={loadMoreRef}
+                sx={{ width: "100%", textAlign: "center", py: 3 }}
+              >
+                <CircularProgress size={24} />
+                <Typography variant="body2" mt={1}>
+                  Loading more products...
+                </Typography>
+              </Box>
+            )}
           </Box>
         )}
       </Box>

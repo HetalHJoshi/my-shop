@@ -780,7 +780,7 @@
 //   );
 // };
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
@@ -828,9 +828,28 @@ export const ProductForm: React.FC = () => {
 
   const photoUrl = watch("photo");
 
+  // NEW: state for stable preview image src and error flag
+  const [previewSrc, setPreviewSrc] = useState<string>("/fallback-image.png");
+  const [hasError, setHasError] = useState(false);
+
+  // Sync previewSrc with photoUrl, avoid flicker by only updating when different
   useEffect(() => {
+    if (photoUrl && photoUrl.trim() !== "") {
+      if (photoUrl !== previewSrc) {
+        setPreviewSrc(photoUrl);
+        setHasError(false); // reset error when new url comes
+      }
+    } else {
+      if (previewSrc !== "/fallback-image.png") {
+        setPreviewSrc("/fallback-image.png");
+        setHasError(false);
+      }
+    }
+  }, [photoUrl, previewSrc]);
+
+  useEffect(() => {
+    if (!isEdit) return;
     const fetchProduct = async () => {
-      if (!isEdit) return;
       try {
         const res = await axios.get(`http://localhost:3001/products/${id}`);
         reset(res.data);
@@ -854,10 +873,18 @@ export const ProductForm: React.FC = () => {
     }
   };
 
+  // Only set fallback once when image loading fails
+  const onImageError = () => {
+    if (!hasError) {
+      setPreviewSrc("/fallback-image.png");
+      setHasError(true);
+    }
+  };
+
   return (
     <Container maxWidth="md">
       <Paper sx={{ p: 4, mt: 6 }}>
-        <Typography variant="h5" gutterBottom>
+        <Typography variant="h5" gutterBottom sx={{ textAlign: "center" }}>
           {isEdit ? "Edit Product" : "Add New Product"}
         </Typography>
 
@@ -869,20 +896,29 @@ export const ProductForm: React.FC = () => {
         >
           {/* Left: Image preview */}
           <Box
-            component="img"
-            src={photoUrl || "/fallback-image.png"}
-            alt="Preview"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = "/fallback-image.png";
-            }}
             sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
               width: 240,
               height: 240,
-              objectFit: "cover",
               borderRadius: 2,
               backgroundColor: "#f0f0f0",
             }}
-          />
+          >
+            <Box
+              component="img"
+              src={previewSrc}
+              alt="Preview Image"
+              onError={onImageError}
+              sx={{
+                maxWidth: "100%",
+                maxHeight: "100%",
+                objectFit: "contain",
+                borderRadius: 2,
+              }}
+            />
+          </Box>
 
           {/* Right: Form Fields */}
           <Box
