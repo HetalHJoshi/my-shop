@@ -32,9 +32,34 @@
 // export const register = (userData: SignupCredentials) =>
 //   axios.post(BASE, userData);
 
+// import axios from "axios";
+
+// const BASE = "https://buildproduct.free.beeceptor.com/api/users";
+
+// export interface UserRecord {
+//   id: string;
+//   fullName?: string;
+//   email: string;
+//   password: string;
+// }
+
+// // Fetch all users
+// export const fetchUsers = () => axios.get<UserRecord[]>(BASE);
+
+// // Register a new user
+// export interface SignupCredentials {
+//   fullName: string;
+//   email: string;
+//   password: string;
+// }
+// export const register = (userData: SignupCredentials) =>
+//   axios.post(BASE, userData);
+
+// src/api/authApi.ts
 import axios from "axios";
 
-const BASE = "https://buildproduct.free.beeceptor.com/api/users";
+// ← point at your JSON-Server instead of Beeceptor
+const BASE = "http://localhost:3001/users";
 
 export interface UserRecord {
   id: string;

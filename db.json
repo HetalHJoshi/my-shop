@@ -1,0 +1,42 @@
+{
+  "users": [
+    {
+      "id": "df23",
+      "fullName": "hetal joshi",
+      "email": "hetal@gmail.com",
+      "password": "1234567"
+    }
+  ],
+  "products": [
+    {
+      "id": "4cbf",
+      "name": "test9",
+      "description": "test9",
+      "price": "1",
+      "category": "Electronics",
+      "discount": "1",
+      "rating": "5",
+      "photo": "https://cdn.dummyjson.com/product-images/beauty/essence-mascara-lash-princess/1.webp"
+    },
+    {
+      "id": "54ef",
+      "name": "280",
+      "description": "2888",
+      "price": "28",
+      "category": "28",
+      "discount": "28",
+      "rating": "8",
+      "photo": "https://cdn.dummyjson.com/product-images/beauty/eyeshadow-palette-with-mirror/1.webp"
+    },
+    {
+      "id": "4bcb",
+      "name": "aaaaaaaaaa",
+      "description": "aaaaaaaaaaaa",
+      "price": "100",
+      "category": "Electronics",
+      "discount": "10",
+      "rating": "4.5",
+      "photo": "https://cdn.dummyjson.com/product-images/beauty/essence-mascara-lash-princess/1.webp"
+    }
+  ]
+}

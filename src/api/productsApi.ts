@@ -2,7 +2,8 @@
 import axios from "axios";
 import type { Product } from "../types/Product";
 
-const URL = "https://buildproduct.free.beeceptor.com/api/product";
+// ← use the plural resource name that matches your db.json
+const URL = "http://localhost:3001/products";
 
 export const fetchProducts = () =>
   axios.get<Product[]>(URL).then((res) => res.data);
